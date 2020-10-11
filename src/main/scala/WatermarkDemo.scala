@@ -32,7 +32,7 @@ object WatermarkDemo {
       .window(TumblingEventTimeWindows.of(Time.seconds(10))) // 按照消息的EventTime分配窗口，和调用TimeWindow效果一样
       .allowedLateness(Time.seconds(4)) // 允许延迟4s
       .sideOutputLateData(lateOutputTag)
-      .maxBy(1)
+      .minBy(1)
       window.print()
     // 把延迟的数据暂时打印到控制台，实际可以保存到存储介质中。
     val sideOutput = window.getSideOutput(lateOutputTag)
@@ -40,20 +40,3 @@ object WatermarkDemo {
     env.execute("WatermarkDemo")
   }
 }
-
-//object StreamingPeriodicWatermark extends AssignerWithPeriodicWatermarks[(String, Int, Long)]{
-//
-//  var currentMaxTimestamp = 0L
-//  val maxOutOfOrderness = 2000L // 最大允许的乱序时间是10s
-//
-//  override def getCurrentWatermark: Watermark = {
-//    new Watermark(currentMaxTimestamp - maxOutOfOrderness)
-//  }
-//
-//  override def extractTimestamp(element: (String, Int, Long), previousElementTimestamp: Long): Long = {
-//    val timestamp = element._3*1000
-//    currentMaxTimestamp = Math.max(currentMaxTimestamp, timestamp)
-//    timestamp
-//  }
-//
-//}

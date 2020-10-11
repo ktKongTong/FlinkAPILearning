@@ -26,8 +26,8 @@ object EventTimeWindowDemo {
       .keyBy(1)
       .timeWindow(Time.seconds(30))
       .maxBy(3)
+    resultDS1.print()
     resultDS1.addSink(new MyJdbcSink)
-
     class MyJdbcSink() extends RichSinkFunction[(Int, Int, Int, Float, Long)] {
       //定义sql连接、预编译器
       var conn: Connection = _
@@ -37,7 +37,7 @@ object EventTimeWindowDemo {
       //初始化 创建连接 和 预编译语句
       override def open(parameters: Configuration): Unit = {
         super.open(parameters)
-        conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=utf8", "root", "111111")
+        conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/test", "root", "root")
         insertStmt = conn.prepareStatement("insert into orders (orderId,customId,commodityId,price,timestamps) values (?,?,?,?,?)")
         updateStmt = conn.prepareStatement("update orders set customId=?,price=?,timestamps=?, commodityId = ? where orderId = ?")
       }
@@ -48,11 +48,11 @@ object EventTimeWindowDemo {
         updateStmt.setInt(2,value._3)
         updateStmt.setFloat(3, value._4)
         updateStmt.setLong(4,value._5)
-        updateStmt.setLong(5,value._1)
+        updateStmt.setInt(5,value._1)
         updateStmt.execute()
         //如果update没有更新 即 没有查询到数据 即 没有该id 那么执行插入
         if (updateStmt.getUpdateCount == 0) {
-          insertStmt.setLong(1,value._1)
+          insertStmt.setInt(1,value._1)
           insertStmt.setInt(2, value._2)
           insertStmt.setInt(3,value._3)
           insertStmt.setFloat(4, value._4)
@@ -77,18 +77,18 @@ object EventTimeWindowDemo {
       .keyBy(1)
       .timeWindow(Time.seconds(30), Time.seconds(10))
     //统计上述数据每个顾客的消费总金额以及订单数量(要求 2 )
-    windowedStream2.aggregate(new AggregateFunction[(Int, Int, Int, Float, Long), (Int, Float), (Int, Float)] {
+    windowedStream2.aggregate(new AggregateFunction[(Int, Int, Int, Float, Long), (Int,Int, Float), (Int,Int, Float)] {
       // 迭代的初始值
-      override def createAccumulator(): (Int, Float) = (0, 0)
+      override def createAccumulator(): (Int,Int, Float) = (0,0, 0)
       // 每一个数据如何和迭代数据 迭代
-      override def add(value: (Int, Int, Int, Float, Long), accumulator: (Int, Float)): (Int, Float) = {
-        (accumulator._1+1,accumulator._2 + value._4)
+      override def add(value: (Int, Int, Int, Float, Long), accumulator: (Int,Int, Float)): (Int,Int, Float) = {
+        (value._2,accumulator._2+1,accumulator._3 + value._4)
       }
       // 返回结果
-      override def getResult(accumulator: (Int, Float)): (Int, Float) = accumulator
+      override def getResult(accumulator: (Int,Int, Float)): (Int,Int, Float) = accumulator
       // 每个分区数据之间如何合并数据
-      override def merge(acc: (Int, Float), acc1: (Int, Float)): (Int, Float) = {
-        (acc._1+acc1._1,acc._2+acc1._2)
+      override def merge(acc: (Int,Int, Float), acc1: (Int,Int, Float)): (Int,Int,Float) = {
+        (acc._1,acc._2+acc1._2,acc._3+acc1._3)
       }
     }).print()
 
@@ -107,7 +107,7 @@ object EventTimeWindowDemo {
       override def createAccumulator(): (Int, Int) = (0, 0)
       // 每一个数据如何和迭代数据 迭代
       override def add(value: (Int, Int, Int, Float, Long), accumulator: (Int, Int)): (Int, Int) = {
-        (value._3,accumulator._2.+(1))
+        (value._3,accumulator._2+1)
       }
       // 返回结果
       override def getResult(accumulator: (Int, Int)): (Int, Int) = accumulator
