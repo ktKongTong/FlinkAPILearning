@@ -46,11 +46,10 @@ public class SendTemp {
         Scanner scanner = new Scanner(System.in);
         OutputStreamWriter w = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         while (in){
-            System.out.println("input");
             String input=scanner.nextLine();
-//            if(input.equals("")){
-//                in = false;
-//            }
+            if(input.equals("")){
+                in = false;
+            }
             w.write(input+"\n");
             w.flush();
         }
