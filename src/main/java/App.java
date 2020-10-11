@@ -12,16 +12,15 @@ public class App {
 
         OutputStreamWriter w = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         for(int i=0;i<1000;i++){
-
             Random random = new Random();
             int customId = random.nextInt(10)+1;
-            int commodityId = random.nextInt(20)+1;
-            float price = random.nextFloat()*10+1;
+            int commodityId = random.nextInt(5)+1;
+            float price = commodityId+1;
             long time = 1547718208 + i;
-            Order order = new Order(i+1,customId,commodityId,price,time);
+            String orderStr = i+1 + "," + customId + "," + commodityId + "," + price + "," + time;
             Thread.sleep(1000);
-            System.out.println(order);
-            w.write(order.toString()+"\n");
+            System.out.println(orderStr);
+            w.write(orderStr+"\n");
             w.flush();
         }
         socket.shutdownOutput();
