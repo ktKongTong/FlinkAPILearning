@@ -10,6 +10,9 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import scala.sys.env
 
 object WatermarkDemo {
+  /*
+  * Question5
+  * */
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)

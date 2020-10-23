@@ -3,10 +3,13 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTime
 import org.apache.flink.streaming.api.windowing.time.Time
 
 object ProcessTimeWindowDemo {
+  /*
+  * Question1
+  * */
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
-    val sourceDS: DataStream[String] = env.socketTextStream("47.93.48.239", 12345)
+    val sourceDS: DataStream[String] = env.socketTextStream("127.0.0.1", 8887)
     val resultDS: DataStream[(String, Int)] = sourceDS.map(data => {
       val arr: Array[String] = data.split(",")
       (arr(0), arr(1).toInt)

@@ -7,6 +7,9 @@ import java.sql.SQLException;
 import java.util.Random;
 
 public class App {
+    /*
+    * 发送订单数据socket
+    * */
     public static void main(String[] args) throws IOException, InterruptedException {
         ServerSocket serverSocket=new ServerSocket(8888);
         System.out.println("服务端已启动，等待客户端连接..");

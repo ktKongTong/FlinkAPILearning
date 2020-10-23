@@ -11,13 +11,20 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 
 
 object EventTimeWindowDemo {
+  /*
+  * Question 4
+  *
+  * */
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
     val sourceDS: DataStream[String] = env.socketTextStream("127.0.0.1", 8888)
 
-    //统计每30s顾客消费的最大值(要求 1 )
+    /*
+    * 要求 1
+    * 每 30 秒钟，统计一次各用户的最大消费订单信息，将结果写入 MySQL
+    * */
     val resultDS1: DataStream[(Int, Int, Int, Float, Long)] = sourceDS.map(data => {
       val arr: Array[String] = data.split(",")
       (arr(0).toInt, arr(1).toInt, arr(2).toInt, arr(3).toFloat, arr(4).toLong)
@@ -67,8 +74,10 @@ object EventTimeWindowDemo {
         conn.close()
       }
     }
-
-    //按顾客划分30s内的数据，每10s划分一次
+    /*
+    * 要求 2
+    * 统计 30 秒内，各用户的消费总额和订单数量，该数据每 10 秒更新一次，将结果打印输出
+    * */
     val windowedStream2: WindowedStream[(Int, Int, Int, Float, Long), Tuple, TimeWindow] = sourceDS.map(data => {
       val arr: Array[String] = data.split(",")
       (arr(0).toInt, arr(1).toInt, arr(2).toInt, arr(3).toFloat, arr(4).toLong)
@@ -93,7 +102,10 @@ object EventTimeWindowDemo {
     }).print()
 
 
-    //按商品类型划分，每10s统计一次30s内的数据
+    /*
+    * 要求 3
+    * 统计 30 秒内，各商品的销售数量，该数据每 10 秒更新一次，将结果打印输出
+    * */
     val windowedStream3: WindowedStream[(Int, Int, Int, Float, Long), Tuple, TimeWindow] = sourceDS.map(data => {
       val arr: Array[String] = data.split(",")
       (arr(0).toInt, arr(1).toInt, arr(2).toInt, arr(3).toFloat, arr(4).toLong)
