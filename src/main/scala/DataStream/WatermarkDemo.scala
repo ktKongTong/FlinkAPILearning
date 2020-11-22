@@ -22,8 +22,11 @@ object WatermarkDemo {
       (arr(0), arr(1).toInt, arr(2).toLong)
     })
     // 抽取timestamp 和 watermark
-    val waterMarkStream = dataDStream.assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[(String, Int, Long)](Time.seconds(2)) {
-      override def extractTimestamp(t: (String, Int, Long)): Long = t._3 * 1000
+    val waterMarkStream= dataDStream.assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[(String, Int, Long)](Time.seconds(2)) {
+      override def extractTimestamp(t: (String, Int, Long)): Long = {
+        println("test")
+        t._3 * 1000
+      }
     })
 
     // 保存被丢弃的乱序数据

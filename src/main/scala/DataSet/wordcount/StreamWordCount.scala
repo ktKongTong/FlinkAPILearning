@@ -1,5 +1,6 @@
 package DataSet.wordcount
 
+import java.net.URL
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.scala._
 
@@ -22,5 +23,4 @@ object StreamWordCount {
     //5. 启动程序
     env.execute("wordcount job")
   }
-
 }

@@ -2,8 +2,7 @@ package DataSet.batchsource
 
 
 import java.net.URL
-
-import org.apache.flink.api.common.accumulators.{IntCounter, LongCounter}
+import org.apache.flink.api.common.accumulators.IntCounter
 import org.apache.flink.api.common.functions.RichMapFunction
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.api.scala._

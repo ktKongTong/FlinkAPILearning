@@ -1,8 +1,8 @@
 package DataSet.wordcount
 
+import java.net.URL
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
 import org.apache.flink.api.scala._
-import org.apache.flink.streaming.api.scala.DataStream
 
 object BatchWordCount {
   def main(args: Array[String]): Unit = {
