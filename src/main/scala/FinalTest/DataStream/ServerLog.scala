@@ -34,18 +34,18 @@ object ServerLog {
       serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
     })
     val resultDS= sourceDS
-      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[serverLog](Time.milliseconds(0)) {
-      override def extractTimestamp(element: serverLog): Long = element.timestamp
-    })
+      .assignAscendingTimestamps(_.timestamp)
       .timeWindowAll(Time.hours(1),Time.minutes(10))
       .process(new ProcessFunc)
     resultDS.print()
-    env.execute("2")
+    env.execute("test")
   }
 
   class ProcessFunc extends ProcessAllWindowFunction[serverLog,(String,Int),TimeWindow]{
     override def process(context: Context, elements: Iterable[serverLog], out: Collector[(String,Int)]): Unit = {
+      //key为url，value为访问次数
       val m :mutable.Map[String,Int] = mutable.Map()
+      //对于迭代器中的每一个元素，如果在map中已经存在，就找到该元素，count+1，不存在则添加
       for (elem <- elements){
         if(!m.contains(elem.url)) {
           m += (elem.url -> 1)
@@ -54,6 +54,7 @@ object ServerLog {
           m += (elem.url -> count)
         }
       }
+      //遍历完所有元素则转为list并按照count个数排序，收集器收count前五条
       val imList = m.toList.sortBy(_._2)
       if(imList.length>=5){
         for(i <- 1 to 5){
