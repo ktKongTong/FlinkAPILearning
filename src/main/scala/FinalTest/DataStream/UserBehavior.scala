@@ -1,6 +1,8 @@
 package FinalTest.DataStream
 
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import org.apache.flink.api.common.functions.{FlatMapFunction, RichFlatMapFunction, RichReduceFunction}
 import org.apache.flink.api.common.state.{MapState, MapStateDescriptor}
@@ -54,7 +56,7 @@ object UserBehavior {
       .assignAscendingTimestamps(_.timestamp*1000)
       .timeWindowAll(Time.hours(1),Time.minutes(10))
       .process(new ProcessFunc2)
-    resultDS3.print("item pv")
+    resultDS3.print()
 
 
     env.execute("test")
@@ -72,8 +74,8 @@ object UserBehavior {
       out.collect(count)
     }
   }
-  class ProcessFunc2 extends ProcessAllWindowFunction[Behavior,(Int,Int),TimeWindow]{
-    override def process(context: Context, elements: Iterable[Behavior], out: Collector[(Int,Int)]): Unit = {
+  class ProcessFunc2 extends ProcessAllWindowFunction[Behavior,(String),TimeWindow]{
+    override def process(context: Context, elements: Iterable[Behavior], out: Collector[String]): Unit = {
       // key为商品id，value为点击量
       val m :mutable.Map[Int,Int] = mutable.Map()
 //      对于迭代器中的每一个元素，如果在map中已经存在，就找到该元素，count+1，不存在则添加
@@ -87,16 +89,28 @@ object UserBehavior {
       }
   //      遍历完所有元素则转为list并按照count个数排序，收集器收count前五条
       val imList = m.toList.sortBy(_._2)
+      val builder: StringBuilder = new StringBuilder
+      val strTime: String = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date(context.window.getStart))
+      builder.append("窗口的结束时间："+strTime+"\n")
       if(imList.length>=5){
+
         for(i <- 1 to 5){
-          out.collect(imList(imList.length-i))
+          builder.append("Top").append(i).append("\t")
+            .append("商品ID="+imList(imList.length-i)._1+"\t")
+            .append("热门度="+imList(imList.length-i)._2+"\n")
+
         }
       }else{
         for (i <- imList.iterator){
-          out.collect(i)
+          builder.append("Top").append(i).append("\t")
+            .append("商品ID="+i._1+"\t")
+            .append("热门度="+i._2+"\n")
+
         }
       }
-      println("="*15)
+      builder.append("\n====================\n")
+      out.collect(builder.toString)
+//      println("="*15)
     }
   }
 
