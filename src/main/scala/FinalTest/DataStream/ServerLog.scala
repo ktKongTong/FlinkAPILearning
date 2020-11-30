@@ -3,12 +3,11 @@ package FinalTest.DataStream
 import java.net.URL
 import java.text.SimpleDateFormat
 
-import FinalTest.DataStream.UserBehavior.{Behavior, getClass}
 import org.apache.flink.api.scala.createTypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.scala.function.ProcessAllWindowFunction
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.api.scala.{DataStream, OutputTag, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.util.Collector
@@ -33,12 +32,25 @@ object ServerLog {
 //     arr(0):ip,arr(3):time,arr(4):timezone,arr(5):way,arr(6):url
       serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
     })
+    val lateOutputTag = OutputTag[serverLog]("late-data")
     val resultDS= sourceDS
-      .assignAscendingTimestamps(_.timestamp)
+//      延迟2min
+      .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[serverLog](Time.seconds(40)) {
+        override def extractTimestamp(element: serverLog): Long = element.timestamp
+      })
       .timeWindowAll(Time.hours(1),Time.minutes(10))
+      .allowedLateness(Time.seconds(30)) // 允许延迟30s
+      .sideOutputLateData(lateOutputTag)
       .process(new ProcessFunc)
     resultDS.print()
+
+    // 把延迟的数据暂时打印到控制台，实际可以保存到存储介质中。
+    val sideOutput = resultDS.getSideOutput(lateOutputTag)
+    sideOutput.print()
+
+
     env.execute("test")
+
   }
 
   class ProcessFunc extends ProcessAllWindowFunction[serverLog,(String,Int),TimeWindow]{

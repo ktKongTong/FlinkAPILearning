@@ -5,7 +5,9 @@ import java.text.SimpleDateFormat
 
 import FinalTest.DataStream.ServerLog.serverLog
 import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, createTypeInformation}
+import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.table.api.{EnvironmentSettings, Slide, Table, Tumble}
 import org.apache.flink.types.Row
 import org.apache.flink.table.api.scala._
@@ -27,7 +29,10 @@ object tableServeLog {
       val dt = dfs.parse(arr(3))
       //     arr(0):ip,arr(3):timestamp,arr(4):timezone,arr(5):way,arr(6):url
       serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
-    }).assignAscendingTimestamps(_.timestamp)
+    }).assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[serverLog](Time.seconds(40)) {
+      override def extractTimestamp(element: serverLog): Long = element.timestamp
+    })
+
     val sourceTable:Table = tableEnv.fromDataStream( sourceDS, 'ip,'timestamp.rowtime,'timezone,'way,'url)
     val table = sourceTable
       .window(Slide over 1.hour every 10.minutes on 'timestamp as 'w)
