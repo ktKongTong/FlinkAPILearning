@@ -2,8 +2,11 @@ package FinalTest.TableAPI
 
 import java.net.URL
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 import FinalTest.DataStream.ServerLog.serverLog
+import org.apache.flink.api.common.functions.FlatMapFunction
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, createTypeInformation}
@@ -11,8 +14,11 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.table.api.{EnvironmentSettings, Slide, Table, Tumble}
 import org.apache.flink.types.Row
 import org.apache.flink.table.api.scala._
+import org.apache.flink.util.Collector
 
-object tableServeLog {
+import scala.collection.mutable
+
+object TableServeLog {
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
@@ -52,7 +58,34 @@ object tableServeLog {
         |WHERE row_num<=5
         |""".stripMargin
     val resultTable: Table = tableEnv.sqlQuery(query)
-    resultTable.toRetractStream[Row].print()
+    resultTable.toRetractStream[Row]
+      .filter(_._1==true).flatMap(new flatMapFunc2).print()
     env.execute("table API job")
+  }
+  class flatMapFunc2 extends FlatMapFunction[(Boolean,Row),String]{
+    val collect:mutable.Map[(LocalDateTime,Long),(String,LocalDateTime,Long,Long)]=mutable.Map[(LocalDateTime,Long),(String,LocalDateTime,Long,Long)]()
+    var oldTime:LocalDateTime = LocalDateTime.MIN
+    override def flatMap(data: (Boolean,Row), out: Collector[String]): Unit = {
+      val time: LocalDateTime = data._2.getField(1).asInstanceOf[LocalDateTime]
+      val url:String= data._2.getField(0).asInstanceOf[String]
+      val count:Long = data._2.getField(2).asInstanceOf[Long]
+      val serial:Long = data._2.getField(3).asInstanceOf[Long]
+      if(oldTime.equals(time)||oldTime.equals(LocalDateTime.MIN)){
+        collect += ((time,serial) -> (url,time,count,serial))
+      }else{
+        val builder: StringBuilder = new StringBuilder
+        val strTime: String = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss"))
+        builder.append("窗口的结束时间："+strTime+"\n")
+        for(i <- collect.toList.sortBy(_._2._4).iterator){
+          builder.append("Top").append(i._2._4).append("\t")
+            .append("url="+i._2._1+"\t")
+            .append("访问次数="+i._2._3+"\n")
+        }
+        builder.append("\n====================\n")
+        out.collect(builder.toString())
+        collect.clear()
+      }
+      oldTime = time
+    }
   }
 }

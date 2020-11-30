@@ -1,9 +1,10 @@
 package FinalTest.TableAPI
 
 import java.net.URL
-
-import FinalTest.DataStream.ServerLog.serverLog
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import FinalTest.DataStream.UserBehavior.Behavior
+import org.apache.flink.api.common.functions.FlatMapFunction
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
@@ -11,8 +12,11 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.table.api.{EnvironmentSettings, Slide, Table, Tumble}
 import org.apache.flink.types.Row
 import org.apache.flink.table.api.scala._
+import org.apache.flink.util.Collector
 
-object tableUserBehavior {
+import scala.collection.mutable
+
+object TableUserBehavior {
   def main(args: Array[String]): Unit = {
     val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
@@ -46,8 +50,8 @@ object tableUserBehavior {
     //要求2
     val table2= sourceTable
       .window(Slide over 3.hour every 1.hour on 'timestamp as 'w)
-      .groupBy('userId,'w)
-      .select('userId,'w.`end` as 'windowEnd, 'behavior.count as 'cnt)
+      .groupBy('w)
+      .select('userId.count.distinct,'w.`end` as 'windowEnd)
     table2
       .toRetractStream[Row]
       .print()
@@ -58,7 +62,7 @@ object tableUserBehavior {
     val table3= sourceTable
       .window(Slide over 1.hour every 10.minutes on 'timestamp as 'w)
       .groupBy('commodityId,'w)
-      .select('commodityId, 'w.`end` as 'windowEnd, 'commodityId.count as 'cnt)
+      .select('commodityId, 'w.`end` as 'windowEnd, 'behavior.count as 'cnt)
     tableEnv.createTemporaryView("aggTableView3",table3,'commodityId,'windowEnd,'cnt)
     var query3:String=
       """
@@ -72,7 +76,35 @@ object tableUserBehavior {
         |WHERE row_num<=5
         |""".stripMargin
     val resultTable3: Table = tableEnv.sqlQuery(query3)
-    resultTable3.toRetractStream[Row].print()
+    resultTable3.toRetractStream[Row]
+      .filter(_._1==true).flatMap(new flatMapFunc).print()
     env.execute("test")
+  }
+
+  class flatMapFunc extends FlatMapFunction[(Boolean,Row),String]{
+    val collect:mutable.Map[(LocalDateTime,Long),(Int,LocalDateTime,Long,Long)]=mutable.Map[(LocalDateTime,Long),(Int,LocalDateTime,Long,Long)]()
+    var oldTime:LocalDateTime = LocalDateTime.MIN
+    override def flatMap(data: (Boolean,Row), out: Collector[String]): Unit = {
+      val time: LocalDateTime = data._2.getField(1).asInstanceOf[LocalDateTime]
+      val itemId:Int= data._2.getField(0).asInstanceOf[Int]
+      val count:Long = data._2.getField(2).asInstanceOf[Long]
+      val serial:Long = data._2.getField(3).asInstanceOf[Long]
+      if(oldTime.equals(time)||oldTime.equals(LocalDateTime.MIN)){
+        collect += ((time,serial) -> (itemId,time,count,serial))
+      }else{
+        val builder: StringBuilder = new StringBuilder
+        val strTime: String = time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss"))
+        builder.append("窗口的结束时间："+strTime+"\n")
+        for(i <- collect.toList.sortBy(_._2._4).iterator){
+          builder.append("Top").append(i._2._4).append("\t")
+            .append("商品ID="+i._2._1+"\t")
+            .append("热门度="+i._2._3+"\n")
+        }
+        builder.append("\n====================\n")
+        out.collect(builder.toString())
+        collect.clear()
+      }
+      oldTime = time
+    }
   }
 }

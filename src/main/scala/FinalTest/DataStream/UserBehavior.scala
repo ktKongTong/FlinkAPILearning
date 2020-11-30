@@ -40,7 +40,7 @@ object UserBehavior {
       .timeWindowAll(Time.hours(3),Time.hours(1))
       .sum(1)
       .map(_._2)
-//      resultDS1.print("pv")
+      resultDS1.print("pv")
 
 //  要求2
     val  resultDS2:DataStream[Int]= sourceDS
@@ -48,7 +48,7 @@ object UserBehavior {
       .assignAscendingTimestamps(_.timestamp*1000)
       .timeWindowAll(Time.hours(3),Time.hours(1))
       .process( new ProcessFunc1)
-//      resultDS2.print("uv")
+      resultDS2.print("uv")
 
     //  要求3
     val  resultDS3= sourceDS
@@ -90,10 +90,9 @@ object UserBehavior {
   //      遍历完所有元素则转为list并按照count个数排序，收集器收count前五条
       val imList = m.toList.sortBy(_._2)
       val builder: StringBuilder = new StringBuilder
-      val strTime: String = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date(context.window.getStart))
+      val strTime: String = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date(context.window.getEnd))
       builder.append("窗口的结束时间："+strTime+"\n")
       if(imList.length>=5){
-
         for(i <- 1 to 5){
           builder.append("Top").append(i).append("\t")
             .append("商品ID="+imList(imList.length-i)._1+"\t")
@@ -105,12 +104,10 @@ object UserBehavior {
           builder.append("Top").append(i).append("\t")
             .append("商品ID="+i._1+"\t")
             .append("热门度="+i._2+"\n")
-
         }
       }
       builder.append("\n====================\n")
       out.collect(builder.toString)
-//      println("="*15)
     }
   }
 
