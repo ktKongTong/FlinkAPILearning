@@ -4,7 +4,6 @@ import java.net.URL
 import java.text.SimpleDateFormat
 
 import FinalTest.DataStream.UserBehavior.{Behavior, getClass}
-import akka.util.Helpers.timestamp
 import org.apache.flink.api.scala.createTypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
