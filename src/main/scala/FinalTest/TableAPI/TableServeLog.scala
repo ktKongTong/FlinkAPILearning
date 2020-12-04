@@ -45,6 +45,24 @@ object TableServeLog {
       .groupBy('url,'w)
       .select('url, 'w.`end` as 'windowEnd, 'url.count as 'cnt)
 
+    val sinkDDL: String =
+      """
+        |create table jdbcOutputTable (
+        |	url varchar(100) ,
+        | windowEnd timestamp(3) ,
+        |	cnt bigint,
+        | row_num bigint not null
+        |) with (
+        |	'connector.type' = 'jdbc',
+        |	'connector.url' = 'jdbc:mysql://localhost:3306/testdb',
+        |	'connector.table' = 'topUrlLog',
+        |	'connector.driver' = 'com.mysql.cj.jdbc.Driver',
+        |	'connector.username' = 'root',
+        |	'connector.password' = 'root'
+        |)  """.stripMargin
+
+    tableEnv.sqlUpdate(sinkDDL)
+
     tableEnv.createTemporaryView("aggTableView",table,'url,'windowEnd,'cnt)
     var query:String=
       """
@@ -57,10 +75,13 @@ object TableServeLog {
         |	FROM aggTableView)
         |WHERE row_num<=5
         |""".stripMargin
-    val resultTable: Table = tableEnv.sqlQuery(query)
-    resultTable.toRetractStream[Row]
-      .filter(_._1==true).flatMap(new flatMapFunc2).print()
+    tableEnv.sqlQuery(query).insertInto("jdbcOutputTable")
+
+
+//    resultTable.toRetractStream[Row]
+//      .filter(_._1==true).flatMap(new flatMapFunc2).print()
     env.execute("table API job")
+
   }
   class flatMapFunc2 extends FlatMapFunction[(Boolean,Row),String]{
     val collect:mutable.Map[(LocalDateTime,Long),(String,LocalDateTime,Long,Long)]=mutable.Map[(LocalDateTime,Long),(String,LocalDateTime,Long,Long)]()

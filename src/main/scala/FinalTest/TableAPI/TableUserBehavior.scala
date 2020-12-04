@@ -43,18 +43,18 @@ object TableUserBehavior {
       .window(Slide over 3.hour every 1.hour on 'timestamp as 'w)
       .groupBy('w)
       .select('w.`end` as 'windowEnd, 'behavior.count as 'cnt)
-      table1
-        .toRetractStream[Row]
-        .print()
+//      table1
+//        .toRetractStream[Row]
+//        .print()
 
     //要求2
     val table2= sourceTable
       .window(Slide over 3.hour every 1.hour on 'timestamp as 'w)
       .groupBy('w)
       .select('userId.count.distinct,'w.`end` as 'windowEnd)
-    table2
-      .toRetractStream[Row]
-      .print()
+//    table2
+//      .toRetractStream[Row]
+//      .print()
 
 
 
@@ -63,6 +63,26 @@ object TableUserBehavior {
       .window(Slide over 1.hour every 10.minutes on 'timestamp as 'w)
       .groupBy('commodityId,'w)
       .select('commodityId, 'w.`end` as 'windowEnd, 'behavior.count as 'cnt)
+
+    val sinkDDL: String =
+      """
+        |create table jdbcOutputTable (
+        |	commodityId bigint ,
+        | windowEnd timestamp(3) ,
+        |	cnt bigint,
+        | row_num bigint not null
+        |) with (
+        |	'connector.type' = 'jdbc',
+        |	'connector.url' = 'jdbc:mysql://localhost:3306/testdb',
+        |	'connector.table' = 'hotItem',
+        |	'connector.driver' = 'com.mysql.cj.jdbc.Driver',
+        |	'connector.username' = 'root',
+        |	'connector.password' = 'root'
+        |)  """.stripMargin
+
+    tableEnv.sqlUpdate(sinkDDL)
+
+
     tableEnv.createTemporaryView("aggTableView3",table3,'commodityId,'windowEnd,'cnt)
     var query3:String=
       """
@@ -75,9 +95,9 @@ object TableUserBehavior {
         |	FROM aggTableView3)
         |WHERE row_num<=5
         |""".stripMargin
-    val resultTable3: Table = tableEnv.sqlQuery(query3)
-    resultTable3.toRetractStream[Row]
-      .filter(_._1==true).flatMap(new flatMapFunc).print()
+     tableEnv.sqlQuery(query3).insertInto("jdbcOutputTable")
+//    resultTable3.toRetractStream[Row]
+//      .filter(_._1==true).flatMap(new flatMapFunc).print()
     env.execute("test")
   }
 
