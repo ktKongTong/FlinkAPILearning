@@ -28,7 +28,7 @@ object UserBehavior {
     val pathURL: URL = getClass.getResource("/FinalTest/UserBehavior.csv")
     val sourceDS: DataStream[Behavior] = env.readTextFile(pathURL.getPath).map(data => {
       val arr = data.split(",")
-      Behavior(arr(0).toInt,arr(1).toInt,arr(2).toInt,arr(3),arr(4).toLong)
+      Behavior(arr(0).toInt,arr(1).toInt,arr(2).toInt,arr(3),arr(4).toLong+3600*16)
     })
 
 

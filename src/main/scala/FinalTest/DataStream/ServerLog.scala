@@ -30,7 +30,7 @@ object ServerLog {
       val dfs = new SimpleDateFormat("dd/MM/yyyy:HH:mm:ss")
       val dt = dfs.parse(time)
 //     arr(0):ip,arr(3):time,arr(4):timezone,arr(5):way,arr(6):url
-      serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
+      serverLog(arr(0),dt.getTime+3600*16*1000,arr(4),arr(5),arr(6))
     })
     val lateOutputTag = OutputTag[serverLog]("late-data")
     val resultDS= sourceDS

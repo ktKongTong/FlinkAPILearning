@@ -36,7 +36,9 @@ object TableServeLog {
       //     arr(0):ip,arr(3):timestamp,arr(4):timezone,arr(5):way,arr(6):url
       serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
     }).assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[serverLog](Time.seconds(40)) {
-      override def extractTimestamp(element: serverLog): Long = element.timestamp
+      override def extractTimestamp(element: serverLog): Long = {
+        element.timestamp+3600*16*1000
+      }
     })
 
     val sourceTable:Table = tableEnv.fromDataStream( sourceDS, 'ip,'timestamp.rowtime,'timezone,'way,'url)

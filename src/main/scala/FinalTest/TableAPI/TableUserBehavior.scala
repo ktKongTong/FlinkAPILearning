@@ -33,7 +33,7 @@ object TableUserBehavior {
     }).filter(_.behavior=="pv")
       .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[Behavior](Time.minutes(2)) {
         override def extractTimestamp(element: Behavior): Long = {
-          element.timestamp*1000
+          element.timestamp*1000+3600*16*1000
         }
       })
     val sourceTable:Table = tableEnv.fromDataStream(sourceDS,'userId,'commodityId,'typeId,'behavior,'timestamp.rowtime)
