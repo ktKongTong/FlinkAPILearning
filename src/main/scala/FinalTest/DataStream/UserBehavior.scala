@@ -40,7 +40,7 @@ object UserBehavior {
       .timeWindowAll(Time.hours(3),Time.hours(1))
       .sum(1)
       .map(_._2)
-      resultDS1.print("pv")
+//      resultDS1.print("pv")
 
 //  要求2
     val  resultDS2:DataStream[Int]= sourceDS
@@ -48,7 +48,7 @@ object UserBehavior {
       .assignAscendingTimestamps(_.timestamp*1000)
       .timeWindowAll(Time.hours(3),Time.hours(1))
       .process( new ProcessFunc1)
-      resultDS2.print("uv")
+//      resultDS2.print("uv")
 
     //  要求3
     val  resultDS3= sourceDS

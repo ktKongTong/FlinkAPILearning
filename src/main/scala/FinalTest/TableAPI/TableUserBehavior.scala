@@ -77,7 +77,7 @@ object TableUserBehavior {
         |	'connector.table' = 'hotItem',
         |	'connector.driver' = 'com.mysql.cj.jdbc.Driver',
         |	'connector.username' = 'root',
-        |	'connector.password' = 'root'
+        |	'connector.password' = 'Hadoop2!'
         |)  """.stripMargin
 
     tableEnv.sqlUpdate(sinkDDL)

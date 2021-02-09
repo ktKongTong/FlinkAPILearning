@@ -37,7 +37,8 @@ object TableServeLog {
       serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
     }).assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[serverLog](Time.seconds(40)) {
       override def extractTimestamp(element: serverLog): Long = {
-        element.timestamp+3600*16*1000
+        element.timestamp
+//        +3600*16*1000
       }
     })
 
@@ -60,7 +61,7 @@ object TableServeLog {
         |	'connector.table' = 'topUrlLog',
         |	'connector.driver' = 'com.mysql.cj.jdbc.Driver',
         |	'connector.username' = 'root',
-        |	'connector.password' = 'root'
+        |	'connector.password' = 'Hadoop2!'
         |)  """.stripMargin
 
     tableEnv.sqlUpdate(sinkDDL)

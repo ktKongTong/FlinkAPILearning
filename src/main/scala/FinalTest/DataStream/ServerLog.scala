@@ -1,8 +1,9 @@
 package FinalTest.DataStream
 
+import com.sun.org.apache.xalan.internal.lib.ExsltDatetime.time
+
 import java.net.URL
 import java.text.SimpleDateFormat
-
 import org.apache.flink.api.scala.createTypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
@@ -12,6 +13,8 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.util.Collector
 
+import java.time.format.DateTimeFormatter
+import java.util.Date
 import scala.collection.mutable
 
 object ServerLog {
@@ -30,7 +33,7 @@ object ServerLog {
       val dfs = new SimpleDateFormat("dd/MM/yyyy:HH:mm:ss")
       val dt = dfs.parse(time)
 //     arr(0):ip,arr(3):time,arr(4):timezone,arr(5):way,arr(6):url
-      serverLog(arr(0),dt.getTime+3600*16*1000,arr(4),arr(5),arr(6))
+      serverLog(arr(0),dt.getTime,arr(4),arr(5),arr(6))
     })
     val lateOutputTag = OutputTag[serverLog]("late-data")
     val resultDS= sourceDS
@@ -46,7 +49,7 @@ object ServerLog {
 
     // 把延迟的数据暂时打印到控制台，实际可以保存到存储介质中。
     val sideOutput = resultDS.getSideOutput(lateOutputTag)
-    sideOutput.print()
+//    sideOutput.print()
 
 
     env.execute("test")
@@ -77,6 +80,8 @@ object ServerLog {
           out.collect(i)
         }
       }
+      val strTime: String = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date(context.window.getEnd))
+      println("窗口的结束时间："+strTime+"\n")
       println("="*15)
     }
   }
